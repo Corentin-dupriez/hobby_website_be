@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"jesmonite/calculator/internal/calculator"
+
 	"github.com/gorilla/mux"
 )
 
@@ -75,6 +77,6 @@ func PostCalc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	result := CalcPowder(float64(calcRequest.LiquidAmt))
+	result := calculator.CalcPowder(float64(calcRequest.LiquidAmt))
 	json.NewEncoder(w).Encode(result)
 }
