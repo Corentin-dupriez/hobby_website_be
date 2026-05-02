@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"log/slog"
 
@@ -31,31 +30,51 @@ func ConnectToDB() *sql.DB {
 		log.Fatal(err)
 	}
 	slog.Info("Connected to database", "DB_HOST", envHost)
+
+	res := structureExists(db)
+
+	if !res {
+		slog.Info("Table structure doesn't exist")
+	}
+
 	return db
 }
 
-type User struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Age       int
-}
+func structureExists(d *sql.DB) bool {
+	r := QueryDB(d, "SELECT tablename from pg_catalog.pg_tables")
 
-func QueryDB(db *sql.DB, q string) {
-	rows, err := db.Query("SELECT * from users")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var res []User
-	for rows.Next() {
-		var u User
-		err = rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age)
+	for r.Next() {
+		var table string
+		err := r.Scan(&table)
 		if err != nil {
 			log.Fatal(err)
 		}
-		res = append(res, u)
+		if table == "recipes" {
+			return true
+		}
 	}
-	for _, u := range res {
-		fmt.Println(u)
+	return false
+}
+
+func createDBStructure(d *sql.DB) {
+}
+
+func QueryDB(db *sql.DB, q string) *sql.Rows {
+	rows, err := db.Query(q)
+	if err != nil {
+		log.Fatal(err)
 	}
+	return rows
+	// var res []User
+	// for rows.Next() {
+	// 	var u User
+	// 	err = rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	res = append(res, u)
+	// }
+	// for _, u := range res {
+	// 	fmt.Println(u)
+	// }
 }
