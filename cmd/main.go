@@ -19,6 +19,12 @@ func main() {
 
 	slog.SetDefault(logger)
 
+	db := ConnectToDB()
+
+	defer db.Close()
+
+	QueryDB(db, "")
+
 	if err := api.run(api.mount()); err != nil {
 		slog.Error("Server has failed to start", "Error", err)
 		os.Exit(1)

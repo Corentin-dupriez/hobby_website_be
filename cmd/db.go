@@ -2,34 +2,60 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"log/slog"
-	"strconv"
 
 	"github.com/joho/godotenv"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 )
 
-func ConnectToDb() {
+func ConnectToDB() *sql.DB {
 	envFile, _ := godotenv.Read(".env")
 	envHost := envFile["DB_HOST"]
-	envPort, err := strconv.Atoi(envFile["DB_PORT"])
-	if err != nil {
-		slog.Error("Error parsing the port from the environment", "Port", envPort)
-	}
+	envPort := envFile["DB_PORT"]
 	envUser := envFile["DB_USER"]
-	cfg := pq.Config{
-		Host: envHost,
-		Port: uint16(envPort),
-		User: envUser,
-	}
+	envPassword := envFile["DB_PASSWORD"]
 
-	c, err := pq.NewConnectorConfig(cfg)
+	dsn := "postgres://" + envUser + ":" + envPassword + "@" + envHost + ":" + envPort + "/postgres"
+
+	// postgres[ql]://[user[:pwd]@][net-location][:port][/dbname][?param1=value1&...]
+
+	c, err := pq.NewConnector(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
 	db := sql.OpenDB(c)
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
 	slog.Info("Connected to database", "DB_HOST", envHost)
-	defer db.Close()
+	return db
+}
+
+type User struct {
+	ID        int
+	FirstName string
+	LastName  string
+	Age       int
+}
+
+func QueryDB(db *sql.DB, q string) {
+	rows, err := db.Query("SELECT * from users")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var res []User
+	for rows.Next() {
+		var u User
+		err = rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age)
+		if err != nil {
+			log.Fatal(err)
+		}
+		res = append(res, u)
+	}
+	for _, u := range res {
+		fmt.Println(u)
+	}
 }
